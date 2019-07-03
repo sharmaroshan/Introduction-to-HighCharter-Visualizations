@@ -1,0 +1,252 @@
+---
+title: "**Employee Attrition Analysis**"
+date: '`r Sys.Date()`'
+output:
+  html_document:
+    toc: yes
+    number_sections: no
+    code_folding: hide
+    theme: cosmo
+    highlight: tango
+---
+
+<center><img
+src="http://paulmontelongo.com/wp-content/uploads/2008/04/employees.jpg">
+</center>
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(highcharter) 
+library(lubridate)
+library(stringr)
+library(dplyr)
+library(xts)
+
+data <- read.csv('../input/employee.csv')
+```
+
+
+## High Charter Data Visualization
+
+### Bar plot
+```{r fig.align='center'}
+data %>%
+  count(Age, YearsInCurrentRole) %>%
+  group_by(YearsInCurrentRole) %>%
+
+  hchart('bar', hcaes(y = "YearsInCurrentRole", x = "Age", color = "Age")) %>%
+  hc_add_theme(hc_theme_chalk()) %>%
+  hc_title(text = "Age vs Years in Current Role")
+```
+
+The above plot shows that Age has a direct relation with Years in Current Role in a Company. However there is no discrete relationship, The Years in a current role increase with age as the freshers start with 20 so, they cannot have more than one or two years of experience in a company or role.
+
+### Pie Chart
+```{r}
+hchart(as.character(data$Gender), type = "pie") %>%
+hc_title(text = "Gender Gap")
+
+```
+
+The above Pie chart shows the Gender Gap in a company. It is clearly visible that the IT sector is a male dominant Sector but the difference is not huge, The total number of Male Employees is 882 and the Female Employees is 588.
+
+### Bubble Chart
+```{r}
+data %>%
+  count(Age, MonthlyIncome) %>%
+  group_by(Age) %>%
+
+  hchart('scatter', hcaes(x = "Age", y = "MonthlyIncome", size = "MonthlyIncome", color = "Age")) %>%
+  hc_add_theme(hc_theme_538()) %>%
+  hc_title(text = "Age vs Income")
+  ```
+  
+The above plot shows a bubble chart between Age and Income, and as expected the salary has a direct relationship with Age, i.e., The salary increase with Age(Experience in a Company or Role)
+  
+### Distribution Plot
+```{r}
+data %>%
+  count(Age) %>%
+  hchart('area', hcaes(x = "Age", y = "n")) %>%
+  hc_colors("#fb4901") %>%
+  hc_add_theme(hc_theme_ffx()) %>%
+  hc_title(text = "Distribution of Age")
+```
+The Above Distribution Plot shows the Distribution of Age of the Employees working in a company. It is clearly visible that the company has highest number of employees in the age group 35-40 and very few eployees in the age group og 55-60 and 20-25.
+
+
+### Pyramid Chart
+```{r}
+
+options(warn=-1)
+
+tmp <- data %>%
+  group_by(EducationField) %>%
+  summarize(TotalMonthlyIncome = sum(MonthlyIncome)) %>%
+  arrange(-TotalMonthlyIncome)
+
+highchart() %>%
+  hc_chart(type = "pyramid") %>%
+  hc_add_series_labels_values(
+    labels = tmp$EducationField, values = tmp$TotalMonthlyIncome
+    ) %>%
+  hc_title(
+    text="Salary in each Education Field"
+    ) %>%
+  hc_add_theme(hc_theme_flat())
+```
+
+The Above Pyramid Chart shows the Total Salary in each of the Education Field. By looking at the chart we can clearly see that Life Sciences has the Highest share in Salary, after that Medical, Marketing, Technical, and Human Resources come. Human Resources get the lowest share of the Salary.
+
+
+### 3d Bar Chart
+```{r}
+highchart() %>% 
+  hc_chart(type ="column",
+           options3d = list(enabled = TRUE, alpha = 15, beta = 15)) %>%
+  hc_xAxis(categories = data$JobRole) %>% 
+  hc_add_series(data = data$MonthlyIncome, name = "Monthly Income") %>%
+  hc_add_theme(hc_theme_smpl()) %>%
+  hc_title(
+    text="Job vs Income"
+    ) %>%
+    hc_chart(
+      borderColor = '#EBBA95',
+      borderRadius = 10,
+      borderWidth = 1,
+      backgroundColor = list(
+        linearGradient = c(0, 0, 500, 500), stops = list(
+               list(0, 'rgb(155, 5, 255)'),
+               list(1, 'rgb(255, 200, 255)')
+             )))
+             
+```
+
+The Above 3D Bar Chart shows relation between Different Job Roles in a company and their Average Monnthly Salary. We can see that Technical Jobs have very high pay as compared to management and sales job.
+
+
+### Pie Chart
+```{r}
+hchart(as.character(data$BusinessTravel), type = "pie") %>%hc_title(text = "Types of Business Travel")
+```
+
+The Above Pie Chart shows the Distribution of Type of Business Travel each of the Employee gets in a company. The plot shows that only 277 employees travel frequently, 150 of the Employees do not travel at all whereas 1043 of the Employees Travel Rarely.
+
+
+```{r}
+data %>%
+  filter(Gender == "Male") %>%
+  mutate(
+    Total.Paid = MonthlyIncome
+  ) %>%
+  group_by(Department) %>%
+  summarize(USD.Paid = sum(Total.Paid)) %>%
+  arrange(-USD.Paid) %>%
+  hchart('treemap', hcaes(x = 'Department', value = 'USD.Paid', color = 'USD.Paid')) %>%
+  hc_add_theme(hc_theme_elementary()) %>%
+  hc_title(text="Total Monthly Income of Males in different Departments")
+  ```
+  
+The Above Treemap shows the Salary or Total Monthly Salary of the Male Employees in three different Departments of a company. The Graph clearly depicts that the Research and development comprises of almost 90% of the total salary, and sales commprises of the 9% of the total salary whereas the salary of the Human Resources is negligible.
+  
+  
+  ### Tree Map
+  ```{r}
+  data %>%
+  filter(Gender == "Female") %>%
+  mutate(
+    Total.Paid = MonthlyIncome
+  ) %>%
+  group_by(Department) %>%
+  summarize(USD.Paid = sum(Total.Paid)) %>%
+  arrange(-USD.Paid) %>%
+  hchart('treemap', hcaes(x = 'Department', value = 'USD.Paid', color = 'USD.Paid')) %>%
+  hc_add_theme(hc_theme_elementary()) %>%
+  hc_title(text="Total Monthly Income of Females in different Departments")
+```
+  The Above Treemap shows the Salary or Total Monthly Salary of the Female Employees in three different Departments of a company. The Graph clearly depicts that the Research and development comprises of almost 90% of the total salary, and sales commprises of the 9% of the total salary whereas the salary of the Human Resources is negligible.
+
+
+## GGPLOT Visualizations
+
+### Bar Chart
+
+```{r}
+ggplot(data ,aes(x= Education),) + geom_bar( color = 'pink', fill = 'lightblue')+
+ggtitle('Education Level')
+```
+
+The Above Chart shows Bar chart to show the no. of Employees in each of the Education Level. There are 5 levels. Only few employees are of Level 5, Most of the Employees are of the Education Level 3.
+
+
+### Stacked Bar Chart
+```{r}
+ggplot(data, aes(Education))+ geom_bar(aes(fill =JobRole))+
+ggtitle('Education Level vs Job Role')
+```
+
+The Above Stacked Bar Chart shows relation between Education Role and Different Job Roles available in the company.
+
+
+```{r}
+ggplot(data ,aes(Gender))+ geom_bar(aes(fill= JobSatisfaction), fill = 'pink')+
+ggtitle('Gender vs Job Satisfaction')
+```
+
+The Above Bar Plot shows the realtion between the Gender and their Job Satisfaction. The graph says that the Male Employees have much higher Job Satisfaction in comparison to the Female Employees.
+
+
+### Box plot
+```{r}
+# Department vs Hourly Rate  
+
+ggplot(data ,aes(x=factor(Department),y= HourlyRate))+ geom_boxplot()+ theme_dark()
+```
+
+The Above Plot shows a Box plot between Department and their Hourly Rate. It is very Interesting to see that if we average the hourly rates of all the employees of the respective Departments then they have a very similar Hourly Rates.
+
+
+```{r}
+# Job Level vs Total Working Years
+
+ggplot(data,aes(x=factor(JobLevel),y=TotalWorkingYears))+ geom_boxplot()+theme_bw()
+```
+
+The Above Plot shows a Box plot between Job Level and their Total Working Years. It is clearly visible that the Job Level is directly related with total number of working years. The eployees with job level 5 have highest working years in comparison to other Employees.
+
+
+### Density Plot
+```{r}
+ggplot(data,aes(x=MonthlyIncome))+ geom_density(aes(fill =JobRole),alpha=0.6)+ theme_classic()+
+ggtitle('Monthly Income vs Job Role')
+```
+
+The Above Density Plot shows distribution of Monthly Income for Different Job Roles offered in the Company.
+
+```{r}
+
+ggplot(data ,aes(x=MonthlyIncome))+ geom_density(aes(fill=Department,),alpha=0.4)+ theme_linedraw()+
+ggtitle('Monthly Income vs Department')
+```
+
+The Above Density Plot shows distribution of Monthly Income for Different Departments offered in the Company.
+
+### Bin Diagram
+```{r}
+ggplot(data,aes(x=Age ,y=HourlyRate)) +geom_bin2d() + theme_get()+
+ggtitle('Age vs Hourly Rate')
+```
+
+The Above 2D Bin Chart shows the relation between Age and Hourly Rate, and it is clearly visible that the employees between the age 30-45 have very high hourly rate, but the seniors and the freshers have low hourly rates.
+
+
+### Line plot
+```{r}
+ggplot(data ,aes(x=PerformanceRating, y=TotalWorkingYears)) +geom_line()+
+ggtitle('Perfomance Rating vs Total Working Years')
+```
+
+The Above Line Plot shows the realtion between Performance Rating and Total Working Years, and again it has a linear relation pointing that higher the total number of workinng years  higher would be the Performance Rating and Vice Versa.
+
+**Thanks for Reading this Kernel, Please upvote if you like it.**
